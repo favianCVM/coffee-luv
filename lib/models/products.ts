@@ -1,8 +1,8 @@
-import * as mongoose from 'mongoose';
+import mongoose from 'mongoose';
 
 const Schema = mongoose.Schema;
 
-export default new Schema({
+const ProductSchema = new Schema({
 	date: {
 		type: Date,
 		required: false,
@@ -22,3 +22,5 @@ export default new Schema({
 		enum: ["local", "delivery"],
 	},
 });
+
+export default mongoose.model('Products', ProductSchema)

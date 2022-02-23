@@ -1,26 +1,27 @@
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import bodyParser from "body-parser";
 import mongoose from "mongoose";
 import morgan from "morgan";
 import helmet from "helmet";
-import formidable from "express-formidable"
-import jwt from "express-jwt"
-import dotenv from "dotenv"
+import formidable from "express-formidable";
+import jwt from "express-jwt";
+import dotenv from "dotenv";
+import routes from "./routes";
 dotenv.config();
 
 const secretHash: string = process.env.SECRET_HASH || "";
 
 class App {
 	public app: express.Application = express();
-	// public routePrv: Routes = new Routes();
 	// public mongoUrl: string = 'mongodb://localhost/CRMdb';
-	public mongoUrl: string = "mongodb://dalenguyen:123123@localhost:27017/CRMdb";
+	public mongoUrl: string = process.env.MONGO_URI || "";
 
 	constructor() {
 		this.config();
-		console.info("APP INITIALIZATED :::")
-		// this.mongoSetup();
-		// this.routePrv.routes(this.app);
+		console.info("APP INITIALIZATED :::");
+
+		//execute mongo setup
+		this.mongoSetup();
 	}
 
 	//middleware and routes config
@@ -29,12 +30,25 @@ class App {
 		this.app.use(bodyParser.urlencoded({ extended: false }));
 		// serving static files
 		this.app.use(express.static("public"));
-		//
+		// routes
+		this.app.use(routes);
+		// dev logs
 		this.app.use(morgan("dev"));
-    this.app.use(helmet());
-		this.app.use(formidable())
-		this.app.use(jwt({ secret: secretHash, algorithms: ['HS256'] }))
-		//
+		// request security
+		this.app.use(helmet());
+		// form data parser
+		this.app.use(formidable());
+		// jwt encryptation
+		// this.app.use(jwt({ secret: secretHash, algorithms: ["HS256"] }));
+		// unauthorized error middleware
+		this.app.use(
+			(err: any, req: Request, res: Response, next: NextFunction) => {
+				if (err.name === "UnauthorizedError") {
+					res.status(401).send("invalid token...");
+				}
+			}
+		);
+		// console logging request params
 		this.app.use(
 			(
 				req: express.Request,
@@ -51,9 +65,15 @@ class App {
 		);
 	}
 
-	private mongoSetup(): void {
+	private async mongoSetup(): Promise<void> {
 		mongoose.Promise = global.Promise;
-		mongoose.connect(this.mongoUrl);
+		try {
+			console.info("INITIALIZING DATABASE ...");
+			await mongoose.connect(this.mongoUrl);
+			console.info("DATABASE INITIALIZED :::");
+		} catch (error) {
+			console.error(error);
+		}
 	}
 }
 

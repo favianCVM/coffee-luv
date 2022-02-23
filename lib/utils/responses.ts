@@ -6,6 +6,8 @@ export default class ResponsesUtil {
 		response: Response,
 		alternativeMessage: string
 	) => {
+		console.error(error)
+
 		return response.json({
 			error,
 			message: error.message || alternativeMessage,
